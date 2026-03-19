@@ -7,9 +7,9 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
-        "2xl": "1400px",
+        sm: "640px",
       },
     },
     extend: {
@@ -19,6 +19,9 @@ export default {
       },
       fontSize: {
         '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
+        '3xl': ['1.875rem', { lineHeight: '2.25rem', letterSpacing: '-0.02em' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],
+        '5xl': ['3rem', { lineHeight: '1', letterSpacing: '-0.02em' }],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -64,26 +67,33 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        clinical: {
-          "high-risk": "hsl(var(--clinical-high-risk))",
-          "moderate-risk": "hsl(var(--clinical-moderate-risk))",
-          "low-risk": "hsl(var(--clinical-low-risk))",
-          neutral: "hsl(var(--clinical-neutral))",
-          vus: "hsl(var(--clinical-vus))",
-          benign: "hsl(var(--clinical-benign))",
-          pathogenic: "hsl(var(--clinical-pathogenic))",
+        metric: {
+          heart: "hsl(var(--heart-rate))",
+          spo2: "hsl(var(--spo2))",
+          hrv: "hsl(var(--hrv))",
+          temp: "hsl(var(--temperature))",
+          steps: "hsl(var(--steps))",
+          sleep: "hsl(var(--sleep))",
+          calories: "hsl(var(--calories))",
         },
-        tier: {
-          1: "hsl(var(--tier-1))",
-          2: "hsl(var(--tier-2))",
-          3: "hsl(var(--tier-3))",
-          4: "hsl(var(--tier-4))",
+        battery: {
+          full: "hsl(var(--battery-full))",
+          mid: "hsl(var(--battery-mid))",
+          low: "hsl(var(--battery-low))",
+        },
+        status: {
+          connected: "hsl(var(--ring-connected))",
+          disconnected: "hsl(var(--ring-disconnected))",
+          syncing: "hsl(var(--ring-syncing))",
+          error: "hsl(var(--ring-error))",
         },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
       },
       keyframes: {
         "accordion-down": {
@@ -95,19 +105,29 @@ export default {
           to: { height: "0" },
         },
         "fade-in": {
-          from: { opacity: "0", transform: "translateY(4px)" },
+          from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
-        "slide-in": {
-          from: { opacity: "0", transform: "translateX(-8px)" },
-          to: { opacity: "1", transform: "translateX(0)" },
+        "slide-up": {
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.95)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.15s ease-out",
         "accordion-up": "accordion-up 0.15s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "slide-in": "slide-in 0.2s ease-out",
+        "fade-in": "fade-in 0.4s ease-out",
+        "slide-up": "slide-up 0.5s ease-out",
+        "scale-in": "scale-in 0.3s ease-out",
+        "spin-slow": "spin-slow 3s linear infinite",
       },
     },
   },

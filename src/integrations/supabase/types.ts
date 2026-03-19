@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          active_minutes: number | null
+          activity_score: number | null
+          calories_burned: number | null
+          created_at: string
+          data_json: Json | null
+          distance_meters: number | null
+          floors_climbed: number | null
+          hrv_daily: number | null
+          id: string
+          log_date: string
+          readiness_score: number | null
+          resting_heart_rate: number | null
+          skin_temp_avg: number | null
+          sleep_score: number | null
+          spo2_avg: number | null
+          steps: number | null
+          user_id: string
+        }
+        Insert: {
+          active_minutes?: number | null
+          activity_score?: number | null
+          calories_burned?: number | null
+          created_at?: string
+          data_json?: Json | null
+          distance_meters?: number | null
+          floors_climbed?: number | null
+          hrv_daily?: number | null
+          id?: string
+          log_date?: string
+          readiness_score?: number | null
+          resting_heart_rate?: number | null
+          skin_temp_avg?: number | null
+          sleep_score?: number | null
+          spo2_avg?: number | null
+          steps?: number | null
+          user_id: string
+        }
+        Update: {
+          active_minutes?: number | null
+          activity_score?: number | null
+          calories_burned?: number | null
+          created_at?: string
+          data_json?: Json | null
+          distance_meters?: number | null
+          floors_climbed?: number | null
+          hrv_daily?: number | null
+          id?: string
+          log_date?: string
+          readiness_score?: number | null
+          resting_heart_rate?: number | null
+          skin_temp_avg?: number | null
+          sleep_score?: number | null
+          spo2_avg?: number | null
+          steps?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       analysis_jobs: {
         Row: {
           case_id: string
@@ -226,6 +286,57 @@ export type Database = {
           status?: string
           total_variants?: number
           transplant_eligibility?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      devices: {
+        Row: {
+          battery_level: number | null
+          color: string | null
+          created_at: string
+          device_id: string | null
+          device_name: string
+          firmware_version: string | null
+          hardware_version: string | null
+          id: string
+          is_connected: boolean | null
+          last_synced_at: string | null
+          ring_size: string | null
+          serial_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          battery_level?: number | null
+          color?: string | null
+          created_at?: string
+          device_id?: string | null
+          device_name?: string
+          firmware_version?: string | null
+          hardware_version?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          ring_size?: string | null
+          serial_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          battery_level?: number | null
+          color?: string | null
+          created_at?: string
+          device_id?: string | null
+          device_name?: string
+          firmware_version?: string | null
+          hardware_version?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          ring_size?: string | null
+          serial_number?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -458,6 +569,77 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          calories_burned: number | null
+          created_at: string
+          data_json: Json | null
+          device_id: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          heart_rate_avg: number | null
+          heart_rate_max: number | null
+          heart_rate_min: number | null
+          hrv_avg: number | null
+          id: string
+          session_type: string
+          skin_temp_avg: number | null
+          spo2_avg: number | null
+          started_at: string
+          steps: number | null
+          synced: boolean | null
+          user_id: string
+        }
+        Insert: {
+          calories_burned?: number | null
+          created_at?: string
+          data_json?: Json | null
+          device_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          heart_rate_avg?: number | null
+          heart_rate_max?: number | null
+          heart_rate_min?: number | null
+          hrv_avg?: number | null
+          id?: string
+          session_type?: string
+          skin_temp_avg?: number | null
+          spo2_avg?: number | null
+          started_at?: string
+          steps?: number | null
+          synced?: boolean | null
+          user_id: string
+        }
+        Update: {
+          calories_burned?: number | null
+          created_at?: string
+          data_json?: Json | null
+          device_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          heart_rate_avg?: number | null
+          heart_rate_max?: number | null
+          heart_rate_min?: number | null
+          hrv_avg?: number | null
+          id?: string
+          session_type?: string
+          skin_temp_avg?: number | null
+          spo2_avg?: number | null
+          started_at?: string
+          steps?: number | null
+          synced?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
             referencedColumns: ["id"]
           },
         ]
@@ -774,6 +956,74 @@ export type Database = {
             columns: ["sample_id"]
             isOneToOne: false
             referencedRelation: "samples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          avg_heart_rate: number | null
+          avg_pace: number | null
+          calories_burned: number | null
+          created_at: string
+          distance_meters: number | null
+          duration_seconds: number | null
+          elevation_gain: number | null
+          ended_at: string | null
+          id: string
+          max_heart_rate: number | null
+          route_json: Json | null
+          session_id: string | null
+          started_at: string
+          summary_json: Json | null
+          title: string | null
+          user_id: string
+          workout_type: string
+        }
+        Insert: {
+          avg_heart_rate?: number | null
+          avg_pace?: number | null
+          calories_burned?: number | null
+          created_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          elevation_gain?: number | null
+          ended_at?: string | null
+          id?: string
+          max_heart_rate?: number | null
+          route_json?: Json | null
+          session_id?: string | null
+          started_at?: string
+          summary_json?: Json | null
+          title?: string | null
+          user_id: string
+          workout_type: string
+        }
+        Update: {
+          avg_heart_rate?: number | null
+          avg_pace?: number | null
+          calories_burned?: number | null
+          created_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          elevation_gain?: number | null
+          ended_at?: string | null
+          id?: string
+          max_heart_rate?: number | null
+          route_json?: Json | null
+          session_id?: string | null
+          started_at?: string
+          summary_json?: Json | null
+          title?: string | null
+          user_id?: string
+          workout_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
             referencedColumns: ["id"]
           },
         ]

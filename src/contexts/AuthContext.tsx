@@ -1,22 +1,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  loading: true,
-  signOut: async () => {},
-});
-
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -39,13 +34,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  };
+
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }

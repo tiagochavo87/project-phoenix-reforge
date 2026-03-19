@@ -1,17 +1,12 @@
 /**
  * BLE Service for Smart Ring communication via Web Bluetooth API.
- * Provides scan, connect, read/write characteristics, and notification support.
  */
 
-// Ring BLE UUIDs (customizable per hardware)
-const RING_SERVICE_UUID = '0000180d-0000-1000-8000-00805f9b34fb'; // Heart Rate Service
+const RING_SERVICE_UUID = '0000180d-0000-1000-8000-00805f9b34fb';
 const HEART_RATE_CHAR_UUID = '00002a37-0000-1000-8000-00805f9b34fb';
 const BATTERY_SERVICE_UUID = '0000180f-0000-1000-8000-00805f9b34fb';
 const BATTERY_LEVEL_CHAR_UUID = '00002a19-0000-1000-8000-00805f9b34fb';
-
-// Custom ring protocol service (placeholder UUID)
 const RING_CUSTOM_SERVICE_UUID = '12345678-1234-5678-1234-56789abcdef0';
-const RING_DATA_CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
 const RING_COMMAND_CHAR_UUID = '12345678-1234-5678-1234-56789abcdef2';
 
 export type BLEConnectionState = 'disconnected' | 'scanning' | 'connecting' | 'connected' | 'error';
@@ -25,8 +20,8 @@ export interface BLEEvent {
 type BLEListener = (event: BLEEvent) => void;
 
 class BLEService {
-  private device: BluetoothDevice | null = null;
-  private server: BluetoothRemoteGATTServer | null = null;
+  private device: any = null;
+  private server: any = null;
   private listeners: Set<BLEListener> = new Set();
   private _state: BLEConnectionState = 'disconnected';
 
@@ -35,7 +30,7 @@ class BLEService {
   }
 
   get isSupported(): boolean {
-    return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
+    return typeof navigator !== 'undefined' && 'bluetooth' in (navigator as any);
   }
 
   get deviceName(): string | null {
@@ -60,7 +55,7 @@ class BLEService {
     this.emit({ type: 'connection', data: { state }, timestamp: Date.now() });
   }
 
-  async scan(): Promise<BluetoothDevice | null> {
+  async scan(): Promise<any | null> {
     if (!this.isSupported) {
       this.emit({ type: 'error', data: { message: 'Web Bluetooth not supported' }, timestamp: Date.now() });
       return null;
@@ -68,7 +63,8 @@ class BLEService {
 
     try {
       this.setState('scanning');
-      const device = await navigator.bluetooth.requestDevice({
+      const bt = (navigator as any).bluetooth;
+      const device = await bt.requestDevice({
         filters: [
           { services: [RING_SERVICE_UUID] },
           { namePrefix: 'Ring' },
@@ -91,7 +87,7 @@ class BLEService {
     }
   }
 
-  async connect(device?: BluetoothDevice): Promise<boolean> {
+  async connect(device?: any): Promise<boolean> {
     const target = device || this.device;
     if (!target?.gatt) return false;
 
@@ -100,8 +96,6 @@ class BLEService {
       this.server = await target.gatt.connect();
       this.device = target;
       this.setState('connected');
-
-      // Start listening to notifications
       await this.startNotifications();
       return true;
     } catch (err: any) {

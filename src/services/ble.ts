@@ -47,6 +47,7 @@ class BLEService {
   }
 
   private emit(event: BLEEvent) {
+    console.log('[BLE]', event.type, event.data);
     this.listeners.forEach(fn => fn(event));
   }
 
@@ -71,8 +72,10 @@ class BLEService {
 
       this.device = device;
       device.addEventListener('gattserverdisconnected', () => this.onDisconnect());
+      console.log('[BLE] Device selected:', device.name, device.id);
       return device;
     } catch (err: any) {
+      console.error('[BLE] Scan error:', err);
       if (err.name !== 'NotFoundError') {
         this.setState('error');
         this.emit({ type: 'error', data: { message: err.message }, timestamp: Date.now() });
@@ -85,16 +88,22 @@ class BLEService {
 
   async connect(device?: any): Promise<boolean> {
     const target = device || this.device;
-    if (!target?.gatt) return false;
+    if (!target?.gatt) {
+      console.error('[BLE] No GATT server on device');
+      return false;
+    }
 
     try {
       this.setState('connecting');
+      console.log('[BLE] Connecting to GATT server...');
       this.server = await target.gatt.connect();
       this.device = target;
       this.setState('connected');
-      await this.startNotifications();
+      console.log('[BLE] GATT connected, discovering services...');
+      await this.discoverAndSubscribe();
       return true;
     } catch (err: any) {
+      console.error('[BLE] Connect error:', err);
       this.setState('error');
       this.emit({ type: 'error', data: { message: err.message }, timestamp: Date.now() });
       return false;
@@ -114,21 +123,82 @@ class BLEService {
     this.emit({ type: 'disconnect', timestamp: Date.now() });
   }
 
-  async readBattery(): Promise<number | null> {
-    if (!this.server) return null;
+  private async discoverAndSubscribe() {
+    if (!this.server) return;
+
+    // Try to get all available services
+    let services: any[] = [];
     try {
-      const service = await this.server.getPrimaryService(BATTERY_SERVICE_UUID);
-      const char = await service.getCharacteristic(BATTERY_LEVEL_CHAR_UUID);
-      const value = await char.readValue();
-      const level = value.getUint8(0);
-      this.emit({ type: 'battery', data: { level }, timestamp: Date.now() });
-      return level;
-    } catch {
-      return null;
+      services = await this.server.getPrimaryServices();
+      console.log('[BLE] Available services:', services.map((s: any) => s.uuid));
+    } catch (err) {
+      console.warn('[BLE] Could not enumerate services, trying known UUIDs');
+    }
+
+    // Try heart rate notifications
+    await this.tryHeartRateNotifications();
+
+    // Try battery read
+    await this.readBattery();
+
+    // Try to read characteristics from all discovered services
+    for (const service of services) {
+      try {
+        const chars = await service.getCharacteristics();
+        console.log(`[BLE] Service ${service.uuid} characteristics:`, chars.map((c: any) => ({
+          uuid: c.uuid,
+          properties: {
+            read: c.properties.read,
+            write: c.properties.write,
+            notify: c.properties.notify,
+            indicate: c.properties.indicate,
+          }
+        })));
+
+        // Auto-subscribe to any notifiable characteristic
+        for (const char of chars) {
+          if (char.properties.notify && char.uuid !== HEART_RATE_CHAR_UUID) {
+            try {
+              await char.startNotifications();
+              char.addEventListener('characteristicvaluechanged', (event: any) => {
+                const value = event.target.value;
+                const bytes = new Uint8Array(value.buffer);
+                console.log(`[BLE] Notify from ${char.uuid}:`, Array.from(bytes));
+                this.emit({
+                  type: 'data',
+                  data: { uuid: char.uuid, bytes: Array.from(bytes) },
+                  timestamp: Date.now()
+                });
+              });
+              console.log(`[BLE] Subscribed to notifications on ${char.uuid}`);
+            } catch (e) {
+              console.warn(`[BLE] Could not subscribe to ${char.uuid}:`, e);
+            }
+          }
+
+          // Try reading readable characteristics
+          if (char.properties.read) {
+            try {
+              const val = await char.readValue();
+              const bytes = new Uint8Array(val.buffer);
+              console.log(`[BLE] Read ${char.uuid}:`, Array.from(bytes));
+              this.emit({
+                type: 'data',
+                data: { uuid: char.uuid, bytes: Array.from(bytes) },
+                timestamp: Date.now()
+              });
+            } catch (e) {
+              console.warn(`[BLE] Could not read ${char.uuid}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`[BLE] Could not get characteristics for ${service.uuid}`);
+      }
     }
   }
 
-  private async startNotifications() {
+  private async tryHeartRateNotifications() {
     if (!this.server) return;
     try {
       const service = await this.server.getPrimaryService(RING_SERVICE_UUID);
@@ -136,11 +206,31 @@ class BLEService {
       await char.startNotifications();
       char.addEventListener('characteristicvaluechanged', (event: any) => {
         const value = event.target.value;
-        const hr = value.getUint8(1);
+        const flags = value.getUint8(0);
+        const is16bit = flags & 0x01;
+        const hr = is16bit ? value.getUint16(1, true) : value.getUint8(1);
+        console.log('[BLE] Heart rate:', hr);
         this.emit({ type: 'heartrate', data: { heartRate: hr }, timestamp: Date.now() });
       });
-    } catch {
-      // Heart rate service may not be available
+      console.log('[BLE] Heart rate notifications started');
+    } catch (err) {
+      console.warn('[BLE] Heart rate service not available:', err);
+    }
+  }
+
+  async readBattery(): Promise<number | null> {
+    if (!this.server) return null;
+    try {
+      const service = await this.server.getPrimaryService(BATTERY_SERVICE_UUID);
+      const char = await service.getCharacteristic(BATTERY_LEVEL_CHAR_UUID);
+      const value = await char.readValue();
+      const level = value.getUint8(0);
+      console.log('[BLE] Battery level:', level);
+      this.emit({ type: 'battery', data: { level }, timestamp: Date.now() });
+      return level;
+    } catch (err) {
+      console.warn('[BLE] Battery service not available:', err);
+      return null;
     }
   }
 

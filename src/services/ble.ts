@@ -65,12 +65,8 @@ class BLEService {
       this.setState('scanning');
       const bt = (navigator as any).bluetooth;
       const device = await bt.requestDevice({
-        filters: [
-          { services: [RING_SERVICE_UUID] },
-          { namePrefix: 'Ring' },
-          { namePrefix: 'Smart' },
-        ],
-        optionalServices: [BATTERY_SERVICE_UUID, RING_CUSTOM_SERVICE_UUID],
+        acceptAllDevices: true,
+        optionalServices: [RING_SERVICE_UUID, BATTERY_SERVICE_UUID, RING_CUSTOM_SERVICE_UUID],
       });
 
       this.device = device;

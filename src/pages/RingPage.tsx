@@ -1,58 +1,35 @@
-import { useState } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ConnectionBadge } from '@/components/ring/ConnectionBadge';
 import { BatteryIndicator } from '@/components/ring/BatteryIndicator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useBLE } from '@/contexts/BLEContext';
 import { bleService } from '@/services/ble';
-import { Bluetooth, RefreshCw, CircleDot, Info, Zap } from 'lucide-react';
-import type { ConnectionStatus } from '@/types/ring';
+import { Bluetooth, RefreshCw, CircleDot, Info, Zap, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RingPage() {
-  const [status, setStatus] = useState<ConnectionStatus>('disconnected');
-  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
-  const [deviceName, setDeviceName] = useState<string | null>(null);
+  const { status, deviceName, metrics, scan, disconnect, syncNow } = useBLE();
 
   const handleScan = async () => {
     if (!bleService.isSupported) {
       toast.error('Web Bluetooth is not supported in this browser');
       return;
     }
-    setStatus('connecting');
-    const device = await bleService.scan();
-    if (device) {
-      setDeviceName(device.name || 'Smart Ring');
-      const connected = await bleService.connect(device);
-      if (connected) {
-        setStatus('connected');
-        const battery = await bleService.readBattery();
-        setBatteryLevel(battery);
-        toast.success('Ring connected!');
-      } else {
-        setStatus('error');
-        toast.error('Failed to connect');
-      }
-    } else {
-      setStatus('disconnected');
+    await scan();
+    if (bleService.state === 'connected') {
+      toast.success('Ring connected!');
     }
   };
 
   const handleDisconnect = async () => {
-    await bleService.disconnect();
-    setStatus('disconnected');
-    setBatteryLevel(null);
-    setDeviceName(null);
+    await disconnect();
     toast.info('Ring disconnected');
   };
 
   const handleSync = async () => {
-    setStatus('syncing');
-    // Simulate sync
-    setTimeout(() => {
-      setStatus('connected');
-      toast.success('Data synced successfully');
-    }, 2000);
+    await syncNow();
+    toast.success('Data synced');
   };
 
   const isConnected = status === 'connected' || status === 'syncing';
@@ -65,18 +42,36 @@ export default function RingPage() {
         {/* Ring Visual */}
         <div className="flex flex-col items-center py-8">
           <div className={`w-32 h-32 rounded-full border-4 flex items-center justify-center transition-all duration-500 ${
-            isConnected
-              ? 'border-primary pulse-glow'
-              : 'border-muted'
+            isConnected ? 'border-primary pulse-glow' : 'border-muted'
           }`}>
             <CircleDot className={`h-12 w-12 ${isConnected ? 'text-primary' : 'text-muted-foreground'}`} />
           </div>
           <div className="mt-4 text-center space-y-2">
             <ConnectionBadge status={status} />
             {deviceName && <p className="text-sm text-muted-foreground">{deviceName}</p>}
-            {batteryLevel !== null && <BatteryIndicator level={batteryLevel} />}
+            {metrics.batteryLevel !== null && <BatteryIndicator level={metrics.batteryLevel} />}
           </div>
         </div>
+
+        {/* Live Heart Rate */}
+        {isConnected && (
+          <Card className="animate-fade-in border-heart-rate/20">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-heart-rate/10 flex items-center justify-center">
+                <Heart className="h-6 w-6 text-heart-rate animate-pulse" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {metrics.heartRate > 0 ? metrics.heartRate : '--'}
+                  <span className="text-sm font-normal text-muted-foreground ml-1">bpm</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.heartRate > 0 ? 'Live heart rate' : 'Waiting for data…'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Actions */}
         <div className="space-y-3">
@@ -112,12 +107,16 @@ export default function RingPage() {
                   <span className="text-foreground">{deviceName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Firmware</span>
-                  <span className="text-foreground">v2.1.4</span>
+                  <span className="text-muted-foreground">Battery</span>
+                  <span className="text-foreground">{metrics.batteryLevel !== null ? `${metrics.batteryLevel}%` : '--'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Last Sync</span>
-                  <span className="text-foreground">Just now</span>
+                  <span className="text-muted-foreground">Heart Rate</span>
+                  <span className="text-foreground">{metrics.heartRate > 0 ? `${metrics.heartRate} bpm` : '--'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status</span>
+                  <span className="text-foreground capitalize">{status}</span>
                 </div>
               </div>
             </CardContent>
@@ -126,7 +125,7 @@ export default function RingPage() {
 
         {/* BLE Support Notice */}
         {!bleService.isSupported && (
-          <Card className="border-status-error/30 bg-status-error/5">
+          <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <Zap className="h-5 w-5 text-destructive mt-0.5" />
